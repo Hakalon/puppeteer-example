@@ -23,6 +23,12 @@ let bookFlag = true;
 (async () => {
   console.log('Program Start!');
 
+  // #region Initiate
+  if (!fs.existsSync('./checkimg')) { fs.mkdirSync('./checkimg'); }
+  const temp = fs.readFile('./init.txt');
+  console.log('temp');
+  // #endregion
+
   const browser = await puppeteer.launch({ headless: false });
   const timePage = await browser.newPage();
   await timePage.goto(timeAddr);
