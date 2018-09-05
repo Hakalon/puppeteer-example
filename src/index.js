@@ -3,18 +3,21 @@ const events = require('events');
 const tesseract = require('tesseract.js');
 const gm = require('gm');
 const pad = require('pad');
+const fs = require('fs');
 
-const pauseTime = 200;
-const bookDate = '';
-const earlyMin = 0;
-const identifyCode = '';
-const email = '';
 const emitEvent = 'ReloadBooking';
-
 const timeAddr = 'https://npm.cpami.gov.tw/index.aspx';
 const draftAddr = 'https://npm.cpami.gov.tw/apply_2_1.aspx';
 const checkImgPath = './checkimg/CheckImageCode.png';
 const em = new events.EventEmitter();
+
+let pauseTime = 200;
+let bookDate = '';
+let earlyMin = 0;
+let identifyCode = '';
+let email = '';
+let init = ['id', 'mail', 'date', 'min', 'time'];
+
 let sysTime;
 let checkCode;
 let clipOpt;
@@ -23,10 +26,17 @@ let bookFlag = true;
 (async () => {
   console.log('Program Start!');
 
-  // #region Initiate
-  if (!fs.existsSync('./checkimg')) { fs.mkdirSync('./checkimg'); }
-  const temp = fs.readFile('./init.txt');
-  console.log('temp');
+  // #region Init
+  if (!fs.existsSync('./checkimg')) {
+    fs.mkdirSync('./checkimg');
+  }
+
+  init = fs.readFileSync('./init.txt').toString().split(', ');
+  identifyCode = init.id;
+  email = init.mail;
+  bookDate = init.date;
+  earlyMin = init.min;
+  pauseTime = init.time;
   // #endregion
 
   const browser = await puppeteer.launch({ headless: false });
@@ -51,7 +61,6 @@ let bookFlag = true;
   }
   async function checkImg(page, path, newPath = './checkimg/CheckImageCode01.png') {
     // #region - Image threshold process
-    // ## Convert image's threshold for image reconization.
 
     padTitle('Threshold', 'Starting image threshold covertion.');
     await gm(path)
@@ -67,7 +76,6 @@ let bookFlag = true;
     // #endregion
 
     // #region - Image reconization
-    // ## Reconize image for verification code.
 
     await page.waitFor(500);
     padTitle('Reconization', 'Starting image reconization.');
@@ -99,9 +107,10 @@ let bookFlag = true;
       clip: clipOpt
     });
   }
-  // ## This function will load pre-set draft by identifyCode & email,
-  //    and compelete the rest process of booking.
-  // ##
+  /**
+   * This function will load pre-set draft by identifyCode & email,
+   * and compelete the rest process of booking.
+   */
   async function loadDraft() {
     const draftPage = await browser.newPage();
     await draftPage.goto(draftAddr);
@@ -198,11 +207,15 @@ let bookFlag = true;
     console.log('Alter - Successfully Booking! System is going to stop.');
     return true;
   }
-  // ## This function will compelet the process of booking except loading drafts,
-  //    because loading drafts should be done before calling this func,
-  //    also you should pass the page obj which has already navigated to draft page as parameter
-  //    to this func.
-  // ##
+
+  /**
+   * This function will compelet the process of booking except loading drafts,
+   * because loading drafts should be done before calling this func,
+   * also you should pass the page obj which has already navigated to draft page as parameter
+   * to this func.
+   *
+   * @param {any} draftPage - given by browser.newPage()
+   */
   async function book(draftPage) {
     // #region - Check Save Btn exist or not
 
@@ -216,7 +229,6 @@ let bookFlag = true;
     // #endregion
 
     // #region - Check Available Book Date
-    // ## Check whether or not the date is matched, if not stop this round and reload the page.
 
     const element = await draftPage.waitFor('#ContentPlaceHolder1_applystart > option:nth-child(25)');
     const value = await getPropertyValue(element);
@@ -277,7 +289,6 @@ let bookFlag = true;
   }
 
   // #region - Time Check Event
-  // ## Sync the system time of website, and control whether or not to trigger booking function.
 
   em.on('TimeCheck', async interval => {
     const Handler = await timePage.$('#ContentPlaceHolder1_Clocks');
@@ -304,7 +315,6 @@ let bookFlag = true;
   // #endregion
 
   // Register booking event
-
   em.on('CompeletBooking', async () => {
     bookFlag = false;
     let res = true;
@@ -323,16 +333,17 @@ let bookFlag = true;
     let flag = true;
 
     // #region - Dialog event handler of draftPage
-    // ## Dismiss all dialog of draftPage.
+
     draftPage.on('dialog', async dialog => {
       padTitle('Dialog', 'Dialog detected, system closed it automatically.');
       padTitle('Info', dialog.message());
       await dialog.dismiss();
     });
+
     // #endregion
 
     // #region - Query Drafts
-    // ## Input data for quering drafts.
+
     await draftPage.type('#ContentPlaceHolder1_apply_sid', identifyCode);
     await draftPage.type('#ContentPlaceHolder1_apply_email', email);
     await draftPage.select('select#ContentPlaceHolder1_apply_nation', '中華民國');
@@ -344,7 +355,7 @@ let bookFlag = true;
 
     // #endregion
 
-    // ## For-loop for booking function
+    // For-loop for booking function
     do {
       flag = await book(draftPage);
     } while (flag);
