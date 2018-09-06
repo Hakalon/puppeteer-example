@@ -4,14 +4,8 @@ const tesseract = require('tesseract.js');
 const gm = require('gm');
 const pad = require('pad');
 const fs = require('fs');
-/**
- * There are two event you can choose to emit, one is CompeletBooking, the other is ReloadBooking.
- * The latter form a loop on waiting for booking button, so it only load draft one time.
- * The former form a loop on loading draft & waiting for booking button,
- * so it load draft repeatedly.
- */
-const emitEvent = 'ReloadBooking';
 
+const emitEvent = 'ReloadBooking';
 const timeAddr = 'https://npm.cpami.gov.tw/index.aspx';
 const draftAddr = 'https://npm.cpami.gov.tw/apply_2_1.aspx';
 const checkImgPath = './checkimg/CheckImageCode.png';
@@ -94,107 +88,6 @@ let bookFlag = true;
       clip: clipOpt
     });
   }
-  /**
-   * This function will load pre-set draft by identifyCode & email,
-   * and compelete the rest process of booking.
-   */
-  async function loadDraft() {
-    const draftPage = await browser.newPage();
-    await draftPage.goto(draftAddr);
-
-    // #region - Draft page dialog handler
-    draftPage.on('dialog', async dialog => {
-      console.log('Alter - Dialog show up, system will automatically close it.');
-      console.log(`Message - ${dialog.message}`);
-      await dialog.dismiss();
-    });
-    // #endregion
-
-    // #region - Query Drafts
-    await draftPage.type('#ContentPlaceHolder1_apply_sid', 'K122378990');
-    await draftPage.type('#ContentPlaceHolder1_apply_email', 'tf4ewg@gmail.com');
-    await draftPage.select('select#ContentPlaceHolder1_apply_nation', '中華民國');
-    // await draftPage.waitFor(500);
-    const btnErr = await draftPage.click('#ContentPlaceHolder1_btnappok');
-    if (btnErr) console.log(`Query Draft btn error: ${btnErr}`);
-
-    await draftPage.waitFor('#form1 > div.container > div:nth-child(3) > div.col-md-10.Rightcontent > div.content > table > tbody > tr:nth-child(2) > td:nth-child(5) > a');
-    await draftPage.click('#form1 > div.container > div:nth-child(3) > div.col-md-10.Rightcontent > div.content > table > tbody > tr:nth-child(2) > td:nth-child(5) > a');
-    // #endregion
-
-    // #region - Chekc Available Book Date
-    // 這邊固定取第24個child，規則為最早前30天、最晚前7天，因此可預訂日子數目為30-6=24
-    const element = await draftPage.waitFor('#ContentPlaceHolder1_applystart > option:nth-child(24)');
-    const value = await getPropertyValue(element);
-
-    if (value !== bookDate) {
-      console.log('Alert - 預定日期尚未開放，系統重新嘗試中！');
-      console.log(`Info - 目前可預訂之最早日期為: ${value}，預定日期為: ${bookDate}`);
-      await draftPage.waitFor(pauseTime);
-      await draftPage.close();
-      // 停止這一Round，回傳False重新啟動函式
-      return false;
-    }
-    // #endregion
-
-    // #region - Reset Wanted Book Date
-    await draftPage.select('#ContentPlaceHolder1_applystart', bookDate);
-    // 點選完日期會重刷一次頁面，故需要停
-    await draftPage.waitFor(500);
-    console.log('System: True');
-    // #endregion
-
-    // #region - Check Img Handler
-    console.log('Start - Handle check img');
-    await getImg(draftPage);
-    const resetFlag = await checkImg(checkImgPath);
-    console.log('End - Handle check img');
-    // #endregion
-
-    // #region - Wrong length of Check Code Handler
-    // 只能檢查出驗證碼長度對不對，假設不對下方程式碼只會重設驗證圖，然後重新辨識
-    // 但是覺得太麻煩，還是直接整個loadDraft()重跑比較快。
-    // console.log(resetFlag);
-    // while (resetFlag) {
-    //   await resetCheckImg();
-    // }
-    if (resetFlag) {
-      await draftPage.waitFor(pauseTime);
-      await draftPage.close();
-      return false;
-    }
-    // #endregion
-
-    // #region - Check Code Input & Detect succeed or not
-    await draftPage.type('#ContentPlaceHolder1_vcode', checkCode);
-    await draftPage.select('select#ContentPlaceHolder1_teams_count', '3');
-    const beforeUrl = draftPage.url();
-
-    await draftPage.waitFor(300);
-    const temp = await draftPage.$('#ContentPlaceHolder1_btnsave');
-    if (!temp) {
-      console.log('Alert - 按鈕尚未出現!!!!');
-      await draftPage.waitFor(pauseTime);
-      await draftPage.close();
-      // 停止這一Round，回傳False重新啟動函式
-      return false;
-    }
-    await draftPage.click('#ContentPlaceHolder1_btnsave');
-    await draftPage.waitFor(1000);
-    const currentUrl = draftPage.url();
-    if (beforeUrl === currentUrl) {
-      console.log('驗證碼錯誤!!! 系統重新嘗試中!!!');
-      await draftPage.waitFor(pauseTime);
-      await draftPage.close();
-      return false;
-    }
-    // #endregion
-
-    await draftPage.screenshot({ path: './success_apply_screen.png', type: 'png', fullPage: true });
-    console.log('Alter - Successfully Booking! System is going to stop.');
-    return true;
-  }
-
   /**
    * This function will compelet the process of booking except loading drafts,
    * because loading drafts should be done before calling this func,
@@ -319,15 +212,6 @@ let bookFlag = true;
   });
 
   // #endregion
-
-  em.on('CompeletBooking', async () => {
-    bookFlag = false;
-    let res = true;
-
-    do {
-      res = await loadDraft();
-    } while (!res);
-  });
 
   em.on('ReloadBooking', async () => {
     bookFlag = false;
