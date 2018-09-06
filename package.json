@@ -13,5 +13,9 @@
     "pad": "^2.1.0",
     "puppeteer": "^1.5.0",
     "tesseract.js": "^1.0.10"
+  },
+  "scripts": {
+    "start": "node lib/index.js",
+    "build": "babel src -d lib"
   }
 }
