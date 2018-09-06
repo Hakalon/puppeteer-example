@@ -4,8 +4,14 @@ const tesseract = require('tesseract.js');
 const gm = require('gm');
 const pad = require('pad');
 const fs = require('fs');
-
+/**
+ * There are two event you can choose to emit, one is CompeletBooking, the other is ReloadBooking.
+ * The latter form a loop on waiting for booking button, so it only load draft one time.
+ * The former form a loop on loading draft & waiting for booking button,
+ * so it load draft repeatedly.
+ */
 const emitEvent = 'ReloadBooking';
+
 const timeAddr = 'https://npm.cpami.gov.tw/index.aspx';
 const draftAddr = 'https://npm.cpami.gov.tw/apply_2_1.aspx';
 const checkImgPath = './checkimg/CheckImageCode.png';
@@ -24,25 +30,6 @@ let clipOpt;
 let bookFlag = true;
 
 (async () => {
-  console.log('Program Start!');
-
-  // #region Init
-  if (!fs.existsSync('./checkimg')) {
-    fs.mkdirSync('./checkimg');
-  }
-
-  init = fs.readFileSync('./init.txt').toString().split(', ');
-  identifyCode = init.id;
-  email = init.mail;
-  bookDate = init.date;
-  earlyMin = init.min;
-  pauseTime = init.time;
-  // #endregion
-
-  const browser = await puppeteer.launch({ headless: false });
-  const timePage = await browser.newPage();
-  await timePage.goto(timeAddr);
-
   function padTitle(title, message) {
     console.log(`=== ${title} ===`);
     console.log();
@@ -288,6 +275,25 @@ let bookFlag = true;
     return false;
   }
 
+  console.log('Program Start!');
+
+  // #region Init
+
+  if (!fs.existsSync('./checkimg')) { fs.mkdirSync('./checkimg'); }
+
+  init = fs.readFileSync('./init.txt').toString().split(', ');
+  identifyCode = init.id;
+  email = init.mail;
+  bookDate = init.date;
+  earlyMin = init.min;
+  pauseTime = init.time;
+
+  const browser = await puppeteer.launch({ headless: false });
+  const timePage = await browser.newPage();
+  await timePage.goto(timeAddr);
+
+  // #endregion
+
   // #region - Time Check Event
 
   em.on('TimeCheck', async interval => {
@@ -314,7 +320,6 @@ let bookFlag = true;
 
   // #endregion
 
-  // Register booking event
   em.on('CompeletBooking', async () => {
     bookFlag = false;
     let res = true;
