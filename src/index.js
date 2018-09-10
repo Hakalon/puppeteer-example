@@ -104,7 +104,8 @@ let bookFlag = true;
 
     // #region - Check Available Book Date
 
-    const element = await draftPage.waitFor('#ContentPlaceHolder1_applystart > option:nth-child(25)');
+    // 將nth-child(25)改成24，需要再改為遞迴一個個檢查來確定要選哪個。
+    const element = await draftPage.waitFor('#ContentPlaceHolder1_applystart > option:nth-child(24)');
     const value = await getPropertyValue(element);
     if ((new Date(init.bookDate) - new Date(value)) > 0) {
       padTitle('Restart', 'Book date is not available, system is retrying.');
@@ -142,7 +143,7 @@ let bookFlag = true;
     await draftPage.select('select#ContentPlaceHolder1_teams_count', '3');
     await draftPage.waitFor(500);
     const beforeURL = await draftPage.url();
-    await draftPage.click('#ContentPlaceHolder1_btnsave');
+    // await draftPage.click('#ContentPlaceHolder1_btnsave');
     padTitle('BeforeURL', beforeURL);
     await draftPage.waitFor(1000);
     const currentURL = await draftPage.url();
@@ -175,35 +176,24 @@ let bookFlag = true;
   }
 
   const browser = await puppeteer.launch({ headless: false });
-  const timePage = await browser.newPage();
-  await timePage.goto(timeAddr);
 
   // #endregion
 
   // #region - Time Check Event
 
-  em.on('TimeCheck', async interval => {
-    const Handler = await timePage.$('#ContentPlaceHolder1_Clocks');
-    const html = await timePage.evaluate(body => body.innerHTML, Handler);
-    await Handler.dispose();
+  em.on('TimeCheck', async () => {
+    sysTime = new Date(Date.now());
 
-    if (sysTime !== convertYear(html)) {
-      sysTime = convertYear(html);
-      padTitle('Time', `Now system time is ${sysTime}`);
-      const res = new Date(convertYear(init.bookDate)) - new Date(sysTime);
+    padTitle('Time', `Now system time is ${sysTime.toLocaleString()}`);
+    const res = new Date(convertYear(init.bookDate)) - new Date(sysTime);
 
-      if (bookFlag && (res <= (2595600000 + init.earlyMin * 60 * 1000))) {
-        em.emit(emitEvent);
-        padTitle('Triggered', 'Book time is up, trigger booking event.');
-      } else if (bookFlag) {
-        padTitle('Alert', `Wait for ${((res - 2595600000 - (init.earlyMin * 60 * 1000)) / 1000 / 60 / 60).toFixed(1)} hours to trigger booking event`);
-      }
+    if (bookFlag && (res <= (2595600000 + init.earlyMin * 60 * 1000))) {
+      em.emit(emitEvent);
+      padTitle('Triggered', 'Book time is up, trigger booking event.');
+    } else if (bookFlag) {
+      padTitle('Alert', `Wait for ${((res - 2595600000 - (init.earlyMin * 60 * 1000)) / 1000 / 60 / 60).toFixed(1)} hours to trigger booking event`);
     }
-
-    await timePage.waitFor(interval);
-    em.emit('TimeCheck', interval);
   });
-
   // #endregion
 
   em.on('ReloadBooking', async () => {
@@ -244,7 +234,9 @@ let bookFlag = true;
   });
 
   // Start to Sync Time
-  em.emit('TimeCheck', 500);
+  setInterval(() => {
+    em.emit('TimeCheck');
+  }, 500);
 
   console.log('main thread end!');
 })();
