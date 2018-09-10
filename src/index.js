@@ -11,13 +11,7 @@ const draftAddr = 'https://npm.cpami.gov.tw/apply_2_1.aspx';
 const checkImgPath = './checkimg/CheckImageCode.png';
 const em = new events.EventEmitter();
 
-let pauseTime = 200;
-let bookDate = '';
-let earlyMin = 0;
-let identifyCode = '';
-let email = '';
-let init = ['id', 'mail', 'date', 'min', 'time'];
-
+let init = {};
 let sysTime;
 let checkCode;
 let clipOpt;
@@ -102,7 +96,7 @@ let bookFlag = true;
     if (!(await draftPage.$('#ContentPlaceHolder1_btnsave'))) {
       padTitle('Restart', "Can't find Save Btn (7:00 am not yet), system is retrying.");
       await draftPage.reload();
-      await draftPage.waitFor(pauseTime);
+      await draftPage.waitFor(init.pauseTime);
       return true;
     }
 
@@ -112,11 +106,11 @@ let bookFlag = true;
 
     const element = await draftPage.waitFor('#ContentPlaceHolder1_applystart > option:nth-child(25)');
     const value = await getPropertyValue(element);
-    if ((new Date(bookDate) - new Date(value)) > 0) {
+    if ((new Date(init.bookDate) - new Date(value)) > 0) {
       padTitle('Restart', 'Book date is not available, system is retrying.');
-      padTitle('Restart', `The lastest date is ${value}, book date is ${bookDate}`);
+      padTitle('Restart', `The lastest date is ${value}, book date is ${init.bookDate}`);
       await draftPage.reload();
-      await draftPage.waitFor(pauseTime);
+      await draftPage.waitFor(init.pauseTime);
       return true;
     }
 
@@ -124,7 +118,7 @@ let bookFlag = true;
 
     // #region - Reset Wanted Book Date
 
-    await draftPage.select('#ContentPlaceHolder1_applystart', bookDate);
+    await draftPage.select('#ContentPlaceHolder1_applystart', init.bookDate);
     await draftPage.waitFor(500);
 
     // #endregion
@@ -135,7 +129,7 @@ let bookFlag = true;
     if (await checkImg(draftPage, checkImgPath)) {
       padTitle('Restart', 'Wrong length of check code, system is retrying.');
       await draftPage.reload();
-      await draftPage.waitFor(pauseTime);
+      await draftPage.waitFor(init.pauseTime);
       return true;
     }
 
@@ -156,7 +150,7 @@ let bookFlag = true;
     if (beforeURL === currentURL) {
       padTitle('Restart', 'Wrong check code, system is retrying.');
       await draftPage.reload();
-      await draftPage.waitFor(pauseTime);
+      await draftPage.waitFor(init.pauseTime);
       return true;
     }
 
@@ -173,13 +167,12 @@ let bookFlag = true;
   // #region Init
 
   if (!fs.existsSync('./checkimg')) { fs.mkdirSync('./checkimg'); }
-
-  init = fs.readFileSync('./init.txt').toString().split(', ');
-  identifyCode = init.id;
-  email = init.mail;
-  bookDate = init.date;
-  earlyMin = init.min;
-  pauseTime = init.time;
+  if (fs.existsSync('./init.json')) {
+    init = JSON.parse(fs.readFileSync('./init.json').toString());
+  } else {
+    console.log('Please put your init.json at root folder!');
+    return;
+  }
 
   const browser = await puppeteer.launch({ headless: false });
   const timePage = await browser.newPage();
@@ -197,13 +190,13 @@ let bookFlag = true;
     if (sysTime !== convertYear(html)) {
       sysTime = convertYear(html);
       padTitle('Time', `Now system time is ${sysTime}`);
-      const res = new Date(convertYear(bookDate)) - new Date(sysTime);
+      const res = new Date(convertYear(init.bookDate)) - new Date(sysTime);
 
-      if (bookFlag && (res <= (2595600000 + earlyMin * 60 * 1000))) {
+      if (bookFlag && (res <= (2595600000 + init.earlyMin * 60 * 1000))) {
         em.emit(emitEvent);
         padTitle('Triggered', 'Book time is up, trigger booking event.');
       } else if (bookFlag) {
-        padTitle('Alert', `Wait for ${((res - 2595600000 - (earlyMin * 60 * 1000)) / 1000 / 60 / 60).toFixed(1)} hours to trigger booking event`);
+        padTitle('Alert', `Wait for ${((res - 2595600000 - (init.earlyMin * 60 * 1000)) / 1000 / 60 / 60).toFixed(1)} hours to trigger booking event`);
       }
     }
 
@@ -233,8 +226,8 @@ let bookFlag = true;
 
     // #region - Query Drafts
 
-    await draftPage.type('#ContentPlaceHolder1_apply_sid', identifyCode);
-    await draftPage.type('#ContentPlaceHolder1_apply_email', email);
+    await draftPage.type('#ContentPlaceHolder1_apply_sid', init.identityCode);
+    await draftPage.type('#ContentPlaceHolder1_apply_email', init.email);
     await draftPage.select('select#ContentPlaceHolder1_apply_nation', '中華民國');
     await draftPage.click('#ContentPlaceHolder1_btnappok');
 
