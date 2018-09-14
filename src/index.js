@@ -1,9 +1,3 @@
-/**
- * 2018/09/14
- * 待修改:
- * 1. 截圖無法正確截到驗證碼的位置
- */
-
 const puppeteer = require('puppeteer');
 const events = require('events');
 const tesseract = require('tesseract.js');
@@ -12,7 +6,6 @@ const pad = require('pad');
 const fs = require('fs');
 
 const emitEvent = 'ReloadBooking';
-const timeAddr = 'https://npm.cpami.gov.tw/index.aspx';
 const draftAddr = 'https://npm.cpami.gov.tw/apply_2_1.aspx';
 const checkImgPath = './checkimg/CheckImageCode.png';
 const em = new events.EventEmitter();
@@ -65,11 +58,12 @@ let bookFlag = true;
         checkCode = res.text.trim();
         padTitle('Result', `Check code is : ${checkCode}`);
       });
+    let result = false;
     if (checkCode.length !== 5) {
-      return true;
+      result = true;
     }
     padTitle('Reconization', 'Ending image reconization.');
-    return false;
+    return result;
 
     // #endregion
   }
@@ -79,8 +73,8 @@ let bookFlag = true;
       clipOpt = _clipOpt;
     } else {
       clipOpt = await imgElement.boundingBox();
-      clipOpt.x *= 2;
-      clipOpt.y *= 2;
+      clipOpt.x *= init.screenZoomRatio;
+      clipOpt.y *= init.screenZoomRatio;
     }
     await imgElement.screenshot({
       path: checkImgPath,
@@ -141,10 +135,10 @@ let bookFlag = true;
 
     // #region - Check Code Input & Detect succeed or not
 
-    await draftPage.select('select#ContentPlaceHolder1_teams_count', '3');
+    await draftPage.select('select#ContentPlaceHolder1_teams_count', init.memberNum);
     await draftPage.waitFor(500);
     const beforeURL = await draftPage.url();
-    // await draftPage.click('#ContentPlaceHolder1_btnsave');
+    await draftPage.click('#ContentPlaceHolder1_btnsave');
     padTitle('BeforeURL', beforeURL);
     await draftPage.waitFor(1000);
     const currentURL = await draftPage.url();
@@ -190,7 +184,8 @@ let bookFlag = true;
 
     if (bookFlag && (res <= (2595600000 + init.earlyMin * 60 * 1000))) {
       em.emit(emitEvent);
-      padTitle('Triggered', 'Book time is up, trigger booking event.');
+      clearInterval(timer);
+      padTitle('Triggered', 'Book time is up, trigger booking event and stop time check event.');
     } else if (bookFlag) {
       padTitle('Alert', `Wait for ${((res - 2595600000 - (init.earlyMin * 60 * 1000)) / 1000 / 60 / 60).toFixed(1)} hours to trigger booking event`);
     }
@@ -235,7 +230,7 @@ let bookFlag = true;
   });
 
   // Start to Sync Time
-  setInterval(() => {
+  const timer = setInterval(() => {
     em.emit('TimeCheck');
   }, 3000);
 

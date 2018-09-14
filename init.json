@@ -2,6 +2,8 @@
   "identityCode": "A11111111",
   "email": "aaa@gmail.com",
   "bookDate": "107-01-15",
+  "memberNum": "2",
   "earlyMin": 2,
-  "pauseTime": 200
+  "pauseTime": 200,
+  "screenZoomRatio": 1.00
 }
