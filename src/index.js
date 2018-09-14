@@ -1,3 +1,9 @@
+/**
+ * 2018/09/14
+ * 待修改:
+ * 1. 截圖無法正確截到驗證碼的位置
+ */
+
 const puppeteer = require('puppeteer');
 const events = require('events');
 const tesseract = require('tesseract.js');
@@ -92,7 +98,6 @@ let bookFlag = true;
    */
   async function book(draftPage) {
     // #region - Check Save Btn exist or not
-
     if (!(await draftPage.$('#ContentPlaceHolder1_btnsave'))) {
       padTitle('Restart', "Can't find Save Btn (7:00 am not yet), system is retrying.");
       await draftPage.reload();
@@ -104,23 +109,19 @@ let bookFlag = true;
 
     // #region - Check Available Book Date
 
-    // 將nth-child(25)改成24，需要再改為遞迴一個個檢查來確定要選哪個。
-    const element = await draftPage.waitFor('#ContentPlaceHolder1_applystart > option:nth-child(24)');
-    const value = await getPropertyValue(element);
-    if ((new Date(init.bookDate) - new Date(value)) > 0) {
+    const element = await draftPage.$$('#ContentPlaceHolder1_applystart > option');
+    const ableDate = await getPropertyValue(element[element.length - 1]);
+
+    if ((new Date(init.bookDate) - new Date(ableDate)) > 0) {
       padTitle('Restart', 'Book date is not available, system is retrying.');
-      padTitle('Restart', `The lastest date is ${value}, book date is ${init.bookDate}`);
+      padTitle('Restart', `The lastest date is ${ableDate}, book date is ${init.bookDate}`);
       await draftPage.reload();
       await draftPage.waitFor(init.pauseTime);
       return true;
     }
 
-    // #endregion
-
-    // #region - Reset Wanted Book Date
-
     await draftPage.select('#ContentPlaceHolder1_applystart', init.bookDate);
-    await draftPage.waitFor(500);
+    await draftPage.waitFor(250);
 
     // #endregion
 
@@ -236,7 +237,7 @@ let bookFlag = true;
   // Start to Sync Time
   setInterval(() => {
     em.emit('TimeCheck');
-  }, 500);
+  }, 3000);
 
   console.log('main thread end!');
 })();
