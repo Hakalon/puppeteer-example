@@ -93,7 +93,7 @@ let bookFlag = true;
   async function book(draftPage) {
     // #region - Check Save Btn exist or not
     if (!(await draftPage.$('#ContentPlaceHolder1_btnsave'))) {
-      padTitle('Restart', "Can't find Save Btn (7:00 am not yet), system is retrying.");
+      padTitle('Restart', "Can't find Save Btn, system is retrying.");
       await draftPage.reload();
       await draftPage.waitFor(init.pauseTime);
       return true;
@@ -170,7 +170,7 @@ let bookFlag = true;
     return;
   }
 
-  const browser = await puppeteer.launch({ headless: false });
+  const browser = await puppeteer.launch({ headless: true });
 
   // #endregion
 
@@ -178,16 +178,15 @@ let bookFlag = true;
 
   em.on('TimeCheck', async () => {
     sysTime = new Date(Date.now());
-
     padTitle('Time', `Now system time is ${sysTime.toLocaleString()}`);
-    const res = new Date(convertYear(init.bookDate)) - new Date(sysTime);
 
-    if (bookFlag && (res <= (2595600000 + init.earlyMin * 60 * 1000))) {
+    const res = new Date(convertYear(init.bookDate)) - new Date(sysTime);
+    if (bookFlag && (res <= (2509200000 + init.earlyMin * 60 * 1000))) {
       em.emit(emitEvent);
       clearInterval(timer);
-      padTitle('Triggered', 'Book time is up, trigger booking event and stop time check event.');
+      padTitle('Triggered', "Time's up, trigger book event and stop time check event.");
     } else if (bookFlag) {
-      padTitle('Alert', `Wait for ${((res - 2595600000 - (init.earlyMin * 60 * 1000)) / 1000 / 60 / 60).toFixed(1)} hours to trigger booking event`);
+      padTitle('Alert', `Wait for ${((res - (2509200000 + init.earlyMin * 60 * 1000)) / 1000 / 60 / 60).toFixed(1)} hours to trigger booking event`);
     }
   });
   // #endregion
@@ -232,7 +231,7 @@ let bookFlag = true;
   // Start to Sync Time
   const timer = setInterval(() => {
     em.emit('TimeCheck');
-  }, 3000);
+  }, 750);
 
   console.log('main thread end!');
 })();
