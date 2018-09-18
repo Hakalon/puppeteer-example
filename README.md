@@ -66,7 +66,7 @@ Be noticed that you should not change this parameter to **false**, unless you ar
 
 8. **screenZoomRatio**:  
 The screen zoom ratio of your computer, and it matters the coordinate of screenshot.  
-In Windows, just press **Windows+I**, and click **System(系統)** > **Monitor(顯示器)**, and then check the setting of **Zooming and layout(縮放與版面配置)**.  
+In Windows, just press **Windows+I**, and click **System(系統)** > **Monitor(顯示器)**, and then check the setting of **Zoom and layout(縮放與版面配置)**.  
 For example, if your computer set 150%, then use 1.5 on this parameter, and I think only laptop will need to change this parameter.
 
 Now you can just use the command below to start program, and you should see the program keeping showing some hint on the console:

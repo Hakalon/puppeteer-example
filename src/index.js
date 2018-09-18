@@ -225,9 +225,11 @@ let clipOpt;
     // #endregion
 
     // For-loop for booking function
+    /* eslint-disable no-await-in-loop */
     do {
       flag = await book(draftPage);
     } while (flag);
+    /* eslint-enable no-await-in-loop */
   });
   // #endregion
 
