@@ -33,27 +33,41 @@ Two is to create your **init.json** on the root of this project directory, and t
   "memberNum": "2",
   "earlyMin": 2,
   "pauseTime": 200,
+  "headless": true,
   "screenZoomRatio": 1.00
 }
+
 ```
 
 1. **identityCode**:  
 The identity code you use for booking.
+
 2. **email**:  
 The email you use for booking.
+
 3. **bookDate**:  
 The date you want to book, please make sure the format of date is the same as the example.
+
 4. **memberNum**:  
 The total number of person who joins this trip.
+
 5. **earlyMin**:  
 The time this program will early start to keep trying to book, and the unit is Minute.  
 For example, if you set earlyMin to 2, then this program will start to keep trying to book at 06:58.  
 (BTW, The allowed book time is 07:00, and the allowed book date is one month, so if you want to book 107/02/01, the date and time you can start to book is 107/01/02 07:00 AM)
+
 6. **pauseTime**:  
-The interval between the loop of trying to book, and the unit is millisecond. The smaller this parameter, the faster the loop of trying to book.
-7. **screenZoomRatio**:  
-The screen zoom ratio of your computer, it matters the coordinate of screenshot. In Windows, just press **Windows+I**, and click **System(系統)** > **Monitor(顯示器)**, and then check the setting of **Zooming and layout(縮放與版面配置)**.  
-If your computer set 150%, then use 1.5 on this parameter, and I think only laptop will need to change this parameter.
+The interval between the loop of trying to book, and the unit is millisecond. The smaller this parameter, the faster the loop of trying to book, but you should know that it may become a kind of attack like DoS to the website you request.
+
+7. **headless**:  
+The default value is **true**, and it makes the program work in the background.  
+Be noticed that you should not change this parameter to **false**, unless you are a developer and you need to check the program how does it work.  
+***If you change this parameter to fasle, then you need change the screenZoomRatio too. Otherwise the coordinate of screenshot will be wrong.***  
+
+8. **screenZoomRatio**:  
+The screen zoom ratio of your computer, and it matters the coordinate of screenshot.  
+In Windows, just press **Windows+I**, and click **System(系統)** > **Monitor(顯示器)**, and then check the setting of **Zooming and layout(縮放與版面配置)**.  
+For example, if your computer set 150%, then use 1.5 on this parameter, and I think only laptop will need to change this parameter.
 
 Now you can just use the command below to start program, and you should see the program keeping showing some hint on the console:
 ```=bash

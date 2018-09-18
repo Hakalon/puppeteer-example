@@ -5,5 +5,6 @@
   "memberNum": "2",
   "earlyMin": 2,
   "pauseTime": 200,
+  "headless": true,
   "screenZoomRatio": 1.00
 }

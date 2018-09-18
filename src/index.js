@@ -14,7 +14,6 @@ let init = {};
 let sysTime;
 let checkCode;
 let clipOpt;
-let bookFlag = true;
 
 (async () => {
   function padTitle(title, message) {
@@ -170,7 +169,7 @@ let bookFlag = true;
     return;
   }
 
-  const browser = await puppeteer.launch({ headless: true });
+  const browser = await puppeteer.launch({ headless: init.headless });
 
   // #endregion
 
@@ -181,18 +180,17 @@ let bookFlag = true;
     padTitle('Time', `Now system time is ${sysTime.toLocaleString()}`);
 
     const res = new Date(convertYear(init.bookDate)) - new Date(sysTime);
-    if (bookFlag && (res <= (2509200000 + init.earlyMin * 60 * 1000))) {
+    if (res <= (2509200000 + init.earlyMin * 60 * 1000)) {
       em.emit(emitEvent);
       clearInterval(timer);
       padTitle('Triggered', "Time's up, trigger book event and stop time check event.");
-    } else if (bookFlag) {
+    } else {
       padTitle('Alert', `Wait for ${((res - (2509200000 + init.earlyMin * 60 * 1000)) / 1000 / 60 / 60).toFixed(1)} hours to trigger booking event`);
     }
   });
   // #endregion
 
   em.on('ReloadBooking', async () => {
-    bookFlag = false;
     const draftPage = await browser.newPage();
     const naviWaitDP = draftPage.waitForNavigation({ waitUtil: 'networkidle2' });
     await draftPage.goto(draftAddr);
