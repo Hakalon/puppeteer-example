@@ -173,8 +173,13 @@ let clipOpt;
 
   // #endregion
 
-  // #region - Time Check Event
+  // #region - TimeCheck Event Trigger
+  const timer = setInterval(() => {
+    em.emit('TimeCheck');
+  }, 750);
+  // #endregion
 
+  // #region - Event Registeration
   em.on('TimeCheck', async () => {
     sysTime = new Date(Date.now());
     padTitle('Time', `Now system time is ${sysTime.toLocaleString()}`);
@@ -188,7 +193,6 @@ let clipOpt;
       padTitle('Alert', `Wait for ${((res - (2509200000 + init.earlyMin * 60 * 1000)) / 1000 / 60 / 60).toFixed(1)} hours to trigger booking event`);
     }
   });
-  // #endregion
 
   em.on('ReloadBooking', async () => {
     const draftPage = await browser.newPage();
@@ -225,11 +229,7 @@ let clipOpt;
       flag = await book(draftPage);
     } while (flag);
   });
-
-  // Start to Sync Time
-  const timer = setInterval(() => {
-    em.emit('TimeCheck');
-  }, 750);
+  // #endregion
 
   console.log('main thread end!');
 })();
